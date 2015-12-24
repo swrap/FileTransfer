@@ -7,7 +7,7 @@ import java.awt.Insets;
 import javax.swing.JTextPane;
 import javax.swing.JScrollPane;
 import javax.swing.JButton;
-import org.eclipse.wb.swing.FocusTraversalOnArray;
+//import org.eclipse.wb.swing.FocusTraversalOnArray;
 import java.awt.Component;
 import java.awt.Color;
 import javax.swing.AbstractAction;
@@ -170,7 +170,7 @@ public class ConnectionFrame extends JFrame
         gbc_btnSend.gridx = 3;
         gbc_btnSend.gridy = 4;
         getContentPane().add(btnSend, gbc_btnSend);
-        setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{getContentPane(), lblYourIP, txtMine, lblSocket, txtMysocket, lblOtherIP, txtTheirip, lblSocket_1, txtTheirsocket, lblStatus, lblConnected, btnConnect, scrollPane, lblNewLabel_1, txtpnHello, textField, btnSend}));
+//        setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{getContentPane(), lblYourIP, txtMine, lblSocket, txtMysocket, lblOtherIP, txtTheirip, lblSocket_1, txtTheirsocket, lblStatus, lblConnected, btnConnect, scrollPane, lblNewLabel_1, txtpnHello, textField, btnSend}));
 
         setSize(500,500);
     }
