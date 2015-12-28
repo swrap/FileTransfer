@@ -39,17 +39,27 @@ public class Log
         return total;
     }
     
-    public void addMessage(String s, boolean me)
+    public void addMessage(String s, boolean b)
     {
         DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
-        if(me)
+        if(b)
         {
             list.add(dateFormat.format(date) + " " + username + ": " + s);
         }
         else
         {
-            list.add(s);
+            list.add(dateFormat.format(date) + " SYSTEM: " + s);
         }
+    }
+    
+    public void addMessage(String s)
+    {
+        list.add(s);
+    }
+    
+    public String getLastMessage()
+    {
+        return list.get(list.size()-1);
     }
 }

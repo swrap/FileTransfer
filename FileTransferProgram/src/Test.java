@@ -12,6 +12,7 @@ public class Test
         File f = new File(FileSystemView.getFileSystemView().getHomeDirectory().getAbsolutePath() + "\\Downloads");
         if(!f.exists())
             f.mkdirs();
-        System.out.println();
+        File n = new File(f,"YES");
+        System.out.println(n);
     }
 }
