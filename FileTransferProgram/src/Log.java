@@ -25,6 +25,11 @@ public class Log
         return list;
     }
     
+    public void updateUsername(String username)
+    {
+        this.username = username;
+    }
+    
     public String toString()
     {
         String total = "";

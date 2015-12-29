@@ -70,6 +70,11 @@ public class Model extends Observable
         return theirport;
     }
     
+    public String getUsername()
+    {
+        return username;
+    }
+    
     public void setTheirPort(String theirport)
     {
         //need to throw exception
@@ -131,8 +136,10 @@ public class Model extends Observable
         }
     }
     
-    public void connect(String ip, String soc)
+    public void connect(String ip, String soc, String username)
     {
+        this.username = username;
+        log.updateUsername(username);
         state = this.WAITING_FOR_CONNECTION;
         this.setChanged();
         this.notifyObservers();
@@ -148,7 +155,7 @@ public class Model extends Observable
                 {
                     if(stop)
                     {
-                        stop = true;
+                        stop = false;
                         return;
                     }
                     mysoc = new Socket(theirip, theirport);
@@ -164,7 +171,7 @@ public class Model extends Observable
                         ServerSocket ser = new ServerSocket(myport);
                         if(stop)
                         {
-                            stop = true;
+                            stop = false;
                             return;
                         }
                         mysoc = ser.accept();
@@ -184,28 +191,26 @@ public class Model extends Observable
                     }
                     
                 }catch (UnknownHostException e3){
-                    if(stop)
-                    {
-                        stop = true;
-                        return;
-                    }
                     log.addMessage("Unknown host: AKA the ip given or address is not in existance", false);
                     state = Model.this.NOT_CONNECTED;
                     Model.this.setChanged();
                     Model.this.notifyObservers();
-                    return;
-                }catch (IOException e2){
                     if(stop)
                     {
-                        stop = true;
+                        stop = false;
                         return;
                     }
+                }catch (IOException e2){
                     state = Model.this.NOT_CONNECTED;
                     log.addMessage("Error Connecting to Client", false);
                     Model.this.setChanged();
                     Model.this.notifyObservers();
                     e2.printStackTrace();
-                    return;
+                    if(stop)
+                    {
+                        stop = false;
+                        return;
+                    }
                 }
                 receiveInput();
             }
@@ -255,7 +260,6 @@ public class Model extends Observable
                         }
                         else if(obtype == Model.this.DISCONNECT)
                         {
-                            System.out.println("DISCONNECTED");
                             log.addMessage(s);
                             state = Model.this.NOT_CONNECTED;
                             writer.close();
@@ -314,11 +318,4 @@ public class Model extends Observable
     {
         return log.toString();
     }
-    
-//    public static void main(String [] args)
-//    {
-//        System.out.println("NO");
-//        new Model();
-//        System.out.println("YES");
-//    }
 }

@@ -40,6 +40,9 @@ import javax.swing.SwingConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.JPanel;
+import javax.swing.JEditorPane;
+import javax.swing.JInternalFrame;
+import javax.swing.border.LineBorder;
 
 
 public class ConnectionFrame extends JFrame implements Observer
@@ -52,7 +55,7 @@ public class ConnectionFrame extends JFrame implements Observer
     private Model model;
     private JLabel lblConnected;
     private JButton btnConnect;
-    private JTextField txtUser;
+    private JComponent user;
     
     public ConnectionFrame(final Model model)
     {
@@ -64,9 +67,9 @@ public class ConnectionFrame extends JFrame implements Observer
         setVisible(true);
         GridBagLayout gridBagLayout = new GridBagLayout();
         gridBagLayout.columnWidths = new int[]{0, 105, 75, 95, 0};
-        gridBagLayout.rowHeights = new int[]{0, 22, 22, 22, 68, 22, 0, 0};
+        gridBagLayout.rowHeights = new int[]{0, 22, 22, 22, 68, 22, 0, 0, 0};
         gridBagLayout.columnWeights = new double[]{1.0, 1.0, 1.0, 0.0, Double.MIN_VALUE};
-        gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, Double.MIN_VALUE};
+        gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout);
         
         JLabel lblUsername = new JLabel("Username:");
@@ -77,15 +80,15 @@ public class ConnectionFrame extends JFrame implements Observer
         gbc_lblUsername.gridy = 0;
         getContentPane().add(lblUsername, gbc_lblUsername);
         
-        txtUser = new JTextField();
-        txtUser.setText("user");
-        GridBagConstraints gbc_txtUser = new GridBagConstraints();
-        gbc_txtUser.insets = new Insets(0, 0, 5, 5);
-        gbc_txtUser.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtUser.gridx = 1;
-        gbc_txtUser.gridy = 0;
-        getContentPane().add(txtUser, gbc_txtUser);
-        txtUser.setColumns(10);
+        user = new JTextField();
+        ((JTextField)user).setText("user");
+        GridBagConstraints gbc_user = new GridBagConstraints();
+        gbc_user.insets = new Insets(0, 0, 5, 5);
+        gbc_user.fill = GridBagConstraints.HORIZONTAL;
+        gbc_user.gridx = 1;
+        gbc_user.gridy = 0;
+        getContentPane().add(user, gbc_user);
+        ((JTextField)user).setColumns(10);
         
         JLabel lblYourIP = new JLabel("Your IP:");
         lblYourIP.setBackground(Color.WHITE);
@@ -179,7 +182,7 @@ public class ConnectionFrame extends JFrame implements Observer
                 if(btnConnect.getText().equals("Connect"))
                 {
                     //connect to the designated IP
-                    model.connect(((JTextField)theirIp).getText(), ((JTextField)theirSoc).getText());
+                    model.connect(((JTextField)theirIp).getText(), ((JTextField)theirSoc).getText(), ((JTextField)user).getText());
                 }
                 else if(btnConnect.getText().equals("Cancel"))
                 {
@@ -254,14 +257,30 @@ public class ConnectionFrame extends JFrame implements Observer
         lblConnected.setText("NOT Connected");
         btnConnect.setText("Connect");
         
+        JScrollPane scrollPane_1 = new JScrollPane();
+        scrollPane_1.setToolTipText("Drop Files");
+        scrollPane_1.setViewportBorder(new LineBorder(new Color(0, 0, 0)));
+        GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
+        gbc_scrollPane_1.gridheight = 2;
+        gbc_scrollPane_1.gridwidth = 3;
+        gbc_scrollPane_1.insets = new Insets(0, 0, 0, 5);
+        gbc_scrollPane_1.fill = GridBagConstraints.BOTH;
+        gbc_scrollPane_1.gridx = 0;
+        gbc_scrollPane_1.gridy = 6;
+        getContentPane().add(scrollPane_1, gbc_scrollPane_1);
+        
+        JLabel lblFileArea = new JLabel("File Area");
+        scrollPane_1.setColumnHeaderView(lblFileArea);
+        
         JPanel panel = new JPanel();
-        GridBagConstraints gbc_panel = new GridBagConstraints();
-        gbc_panel.gridwidth = 4;
-        gbc_panel.insets = new Insets(0, 0, 0, 5);
-        gbc_panel.fill = GridBagConstraints.BOTH;
-        gbc_panel.gridx = 0;
-        gbc_panel.gridy = 6;
-        getContentPane().add(panel, gbc_panel);
+        scrollPane_1.setViewportView(panel);
+        
+        JButton btnUploadSelected = new JButton("Upload Selected");
+        GridBagConstraints gbc_btnUploadSelected = new GridBagConstraints();
+        gbc_btnUploadSelected.fill = GridBagConstraints.VERTICAL;
+        gbc_btnUploadSelected.gridx = 3;
+        gbc_btnUploadSelected.gridy = 7;
+        getContentPane().add(btnUploadSelected, gbc_btnUploadSelected);
         
         setSize(518,431);
     }
@@ -297,11 +316,13 @@ public class ConnectionFrame extends JFrame implements Observer
             ((JLabel)mySoc).setText(model.getMyPort()+"");
             ((JTextField)theirSoc).setText(model.getTheirPort()+"");
             ((JTextField)theirIp).setText(model.getTheirIp());
+            ((JTextField)user).setText(model.getUsername());
         }
         else
         {
             ((JLabel)theirSoc).setText(model.getTheirPort()+"");
             ((JLabel)theirIp).setText(model.getTheirIp());
+            ((JLabel)user).setText(model.getUsername());
         }
     }
     
@@ -309,33 +330,43 @@ public class ConnectionFrame extends JFrame implements Observer
     {
         getContentPane().remove(theirSoc);
         getContentPane().remove(theirIp);
+        getContentPane().remove(user);
         
 
         GridBagConstraints gbc_theirSoc = new GridBagConstraints();
         GridBagConstraints gbc_theirIp = new GridBagConstraints();
-        
+        GridBagConstraints gbc_user = new GridBagConstraints();
+
         if(theirSoc instanceof JTextField)
         {
             theirSoc = new JLabel(((JTextField)theirSoc).getText());
             theirIp = new JLabel(((JTextField)theirIp).getText());
+            user = new JLabel(((JTextField)user).getText());
         }
         else
         {
             theirSoc = new JTextField(((JLabel)theirSoc).getText());
             theirIp = new JTextField(((JLabel)theirIp).getText());
+            user = new JTextField(((JLabel)user).getText());
             gbc_theirSoc.fill = GridBagConstraints.HORIZONTAL;
             gbc_theirIp.fill = GridBagConstraints.HORIZONTAL;
+            gbc_user.fill = GridBagConstraints.HORIZONTAL;
         }
         
         gbc_theirSoc.insets = new Insets(0, 0, 5, 0);
         gbc_theirSoc.gridx = 3;
-        gbc_theirSoc.gridy = 1;
+        gbc_theirSoc.gridy = 2;
         getContentPane().add(theirSoc, gbc_theirSoc);
         
         gbc_theirIp.insets = new Insets(0, 0, 5, 5);
         gbc_theirIp.gridx = 1;
-        gbc_theirIp.gridy = 1;
+        gbc_theirIp.gridy = 2;
         getContentPane().add(theirIp, gbc_theirIp);
+        
+        gbc_user.insets = new Insets(0, 0, 5, 5);
+        gbc_user.gridx = 1;
+        gbc_user.gridy = 0;
+        getContentPane().add(user, gbc_user);
         
         revalidate();
         repaint();
