@@ -272,8 +272,8 @@ public class ConnectionFrame extends JFrame implements Observer
         JLabel lblFileArea = new JLabel("File Area");
         scrollPane_1.setColumnHeaderView(lblFileArea);
         
-        JPanel panel = new JPanel();
-        scrollPane_1.setViewportView(panel);
+        DropZone dropZone = new DropZone();
+        scrollPane_1.setViewportView(dropZone);
         
         JButton btnUploadSelected = new JButton("Upload Selected");
         GridBagConstraints gbc_btnUploadSelected = new GridBagConstraints();
