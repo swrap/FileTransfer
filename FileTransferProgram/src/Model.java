@@ -102,6 +102,11 @@ public class Model extends Observable
         }
     }
     
+    public void sendFiles(File [] files)
+    {
+        
+    }
+    
     public void sendFile(String pathname, String filename) throws FileNotFoundException
     {
         try{

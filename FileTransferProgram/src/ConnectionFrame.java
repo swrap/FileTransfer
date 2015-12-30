@@ -2,6 +2,7 @@ import javax.swing.JFrame;
 import javax.swing.JTextField;
 import javax.swing.JLabel;
 
+import java.awt.Graphics;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
@@ -10,6 +11,7 @@ import javax.swing.JComponent;
 import javax.swing.JTextPane;
 import javax.swing.JScrollPane;
 import javax.swing.JButton;
+
 
 
 
@@ -25,6 +27,7 @@ import javax.swing.AbstractAction;
 import java.awt.event.ActionEvent;
 
 import javax.swing.Action;
+
 
 
 
@@ -56,21 +59,24 @@ public class ConnectionFrame extends JFrame implements Observer
     private JLabel lblConnected;
     private JButton btnConnect;
     private JComponent user;
+    private DropZone dropZone;
     
     public ConnectionFrame(final Model model)
     {
         this.model = model;
         setBackground(Color.WHITE);
-        setTitle("Transport");
+        setTitle("File Transport");
         setFont(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
         GridBagLayout gridBagLayout = new GridBagLayout();
-        gridBagLayout.columnWidths = new int[]{0, 105, 75, 95, 0};
-        gridBagLayout.rowHeights = new int[]{0, 22, 22, 22, 68, 22, 0, 0, 0};
-        gridBagLayout.columnWeights = new double[]{1.0, 1.0, 1.0, 0.0, Double.MIN_VALUE};
-        gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, Double.MIN_VALUE};
+        gridBagLayout.columnWidths = new int[]{0, 105, 75, 0, 95, 0};
+        gridBagLayout.rowHeights = new int[]{0, 22, 22, 22, 68, 22, 0, 0, 0, 0};
+        gridBagLayout.columnWeights = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
+        gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout);
+
+        dropZone = new DropZone(this);
         
         JLabel lblUsername = new JLabel("Username:");
         GridBagConstraints gbc_lblUsername = new GridBagConstraints();
@@ -119,7 +125,7 @@ public class ConnectionFrame extends JFrame implements Observer
         ((JLabel)mySoc).setText(model.getMyPort()+"");
         GridBagConstraints gbc_mySoc = new GridBagConstraints();
         gbc_mySoc.insets = new Insets(0, 0, 5, 0);
-        gbc_mySoc.gridx = 3;
+        gbc_mySoc.gridx = 4;
         gbc_mySoc.gridy = 1;
         getContentPane().add(mySoc, gbc_mySoc);
         
@@ -154,7 +160,7 @@ public class ConnectionFrame extends JFrame implements Observer
         GridBagConstraints gbc_theirSoc = new GridBagConstraints();
         gbc_theirSoc.insets = new Insets(0, 0, 5, 0);
         gbc_theirSoc.fill = GridBagConstraints.HORIZONTAL;
-        gbc_theirSoc.gridx = 3;
+        gbc_theirSoc.gridx = 4;
         gbc_theirSoc.gridy = 2;
         getContentPane().add(theirSoc, gbc_theirSoc);
         ((JTextField)theirSoc).setColumns(10);
@@ -195,7 +201,7 @@ public class ConnectionFrame extends JFrame implements Observer
             }
         });
         GridBagConstraints gbc_btnConnect = new GridBagConstraints();
-        gbc_btnConnect.gridwidth = 2;
+        gbc_btnConnect.gridwidth = 3;
         gbc_btnConnect.insets = new Insets(0, 0, 5, 0);
         gbc_btnConnect.gridx = 2;
         gbc_btnConnect.gridy = 3;
@@ -203,7 +209,7 @@ public class ConnectionFrame extends JFrame implements Observer
         
         JScrollPane scrollPane = new JScrollPane();
         GridBagConstraints gbc_scrollPane = new GridBagConstraints();
-        gbc_scrollPane.gridwidth = 4;
+        gbc_scrollPane.gridwidth = 5;
         gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
         gbc_scrollPane.fill = GridBagConstraints.BOTH;
         gbc_scrollPane.gridx = 0;
@@ -219,7 +225,7 @@ public class ConnectionFrame extends JFrame implements Observer
         
         textField = new JTextField();
         GridBagConstraints gbc_textField = new GridBagConstraints();
-        gbc_textField.gridwidth = 3;
+        gbc_textField.gridwidth = 4;
         gbc_textField.anchor = GridBagConstraints.NORTH;
         gbc_textField.insets = new Insets(0, 0, 5, 5);
         gbc_textField.fill = GridBagConstraints.HORIZONTAL;
@@ -248,7 +254,7 @@ public class ConnectionFrame extends JFrame implements Observer
         });
         GridBagConstraints gbc_btnSend = new GridBagConstraints();
         gbc_btnSend.insets = new Insets(0, 0, 5, 0);
-        gbc_btnSend.gridx = 3;
+        gbc_btnSend.gridx = 4;
         gbc_btnSend.gridy = 5;
         getContentPane().add(btnSend, gbc_btnSend);
 
@@ -261,7 +267,7 @@ public class ConnectionFrame extends JFrame implements Observer
         scrollPane_1.setToolTipText("Drop Files");
         scrollPane_1.setViewportBorder(new LineBorder(new Color(0, 0, 0)));
         GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
-        gbc_scrollPane_1.gridheight = 2;
+        gbc_scrollPane_1.gridheight = 3;
         gbc_scrollPane_1.gridwidth = 3;
         gbc_scrollPane_1.insets = new Insets(0, 0, 0, 5);
         gbc_scrollPane_1.fill = GridBagConstraints.BOTH;
@@ -271,16 +277,63 @@ public class ConnectionFrame extends JFrame implements Observer
         
         JLabel lblFileArea = new JLabel("File Area");
         scrollPane_1.setColumnHeaderView(lblFileArea);
-        
-        DropZone dropZone = new DropZone();
         scrollPane_1.setViewportView(dropZone);
         
-        JButton btnUploadSelected = new JButton("Upload Selected");
-        GridBagConstraints gbc_btnUploadSelected = new GridBagConstraints();
-        gbc_btnUploadSelected.fill = GridBagConstraints.VERTICAL;
-        gbc_btnUploadSelected.gridx = 3;
-        gbc_btnUploadSelected.gridy = 7;
-        getContentPane().add(btnUploadSelected, gbc_btnUploadSelected);
+        JButton deleteSel = new JButton("Delete Selected");
+        deleteSel.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                dropZone.deleteFiles(true);
+            }
+        });
+        
+        JButton deleteAll = new JButton("Delete All");
+        deleteAll.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                dropZone.deleteFiles(false);
+            }
+        });
+        GridBagConstraints gbc_deleteAll = new GridBagConstraints();
+        gbc_deleteAll.fill = GridBagConstraints.HORIZONTAL;
+        gbc_deleteAll.insets = new Insets(0, 0, 5, 5);
+        gbc_deleteAll.gridx = 3;
+        gbc_deleteAll.gridy = 7;
+        getContentPane().add(deleteAll, gbc_deleteAll);
+        GridBagConstraints gbc_deleteSel = new GridBagConstraints();
+        gbc_deleteSel.fill = GridBagConstraints.HORIZONTAL;
+        gbc_deleteSel.insets = new Insets(0, 0, 5, 0);
+        gbc_deleteSel.gridx = 4;
+        gbc_deleteSel.gridy = 7;
+        getContentPane().add(deleteSel, gbc_deleteSel);
+        
+        JButton sendAll = new JButton("Send All");
+        sendAll.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                model.sendFiles(dropZone.getFiles(false));
+            }
+        });
+        GridBagConstraints gbc_sendAll = new GridBagConstraints();
+        gbc_sendAll.fill = GridBagConstraints.HORIZONTAL;
+        gbc_sendAll.insets = new Insets(0, 0, 0, 5);
+        gbc_sendAll.gridx = 3;
+        gbc_sendAll.gridy = 8;
+        getContentPane().add(sendAll, gbc_sendAll);
+        
+        JButton sendSel = new JButton("Send Selected");
+        sendSel.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                model.sendFiles(dropZone.getFiles(true));
+            }
+        });
+        GridBagConstraints gbc_sendSel = new GridBagConstraints();
+        gbc_sendSel.fill = GridBagConstraints.HORIZONTAL;
+        gbc_sendSel.gridx = 4;
+        gbc_sendSel.gridy = 8;
+        getContentPane().add(sendSel, gbc_sendSel);
         
         setSize(518,431);
     }
