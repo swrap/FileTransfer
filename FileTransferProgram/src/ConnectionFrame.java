@@ -18,6 +18,8 @@ import javax.swing.JButton;
 
 
 
+
+
 //import org.eclipse.wb.swing.FocusTraversalOnArray;
 import java.awt.Component;
 import java.awt.Color;
@@ -25,8 +27,12 @@ import java.awt.Color;
 import javax.swing.AbstractAction;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 
 import javax.swing.Action;
+
+
 
 
 
@@ -48,7 +54,7 @@ import javax.swing.JInternalFrame;
 import javax.swing.border.LineBorder;
 
 
-public class ConnectionFrame extends JFrame implements Observer
+public class ConnectionFrame extends JFrame implements Observer, WindowListener
 {
     private JTextField textField;
     private JComponent theirIp;
@@ -67,7 +73,7 @@ public class ConnectionFrame extends JFrame implements Observer
         setBackground(Color.WHITE);
         setTitle("File Transport");
         setFont(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setVisible(true);
         GridBagLayout gridBagLayout = new GridBagLayout();
         gridBagLayout.columnWidths = new int[]{0, 105, 75, 0, 95, 0};
@@ -76,6 +82,7 @@ public class ConnectionFrame extends JFrame implements Observer
         gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout);
 
+        this.addWindowListener(this);
         dropZone = new DropZone(this);
         
         JLabel lblUsername = new JLabel("Username:");
@@ -115,6 +122,7 @@ public class ConnectionFrame extends JFrame implements Observer
         
         JLabel lblSocket = new JLabel("My Port:");
         GridBagConstraints gbc_lblSocket = new GridBagConstraints();
+        gbc_lblSocket.gridwidth = 2;
         gbc_lblSocket.anchor = GridBagConstraints.EAST;
         gbc_lblSocket.insets = new Insets(0, 0, 5, 5);
         gbc_lblSocket.gridx = 2;
@@ -149,6 +157,7 @@ public class ConnectionFrame extends JFrame implements Observer
         
         JLabel lblSocket_1 = new JLabel("Their Port:");
         GridBagConstraints gbc_lblSocket_1 = new GridBagConstraints();
+        gbc_lblSocket_1.gridwidth = 2;
         gbc_lblSocket_1.anchor = GridBagConstraints.EAST;
         gbc_lblSocket_1.insets = new Insets(0, 0, 5, 5);
         gbc_lblSocket_1.gridx = 2;
@@ -407,7 +416,7 @@ public class ConnectionFrame extends JFrame implements Observer
         }
         
         gbc_theirSoc.insets = new Insets(0, 0, 5, 0);
-        gbc_theirSoc.gridx = 3;
+        gbc_theirSoc.gridx = 4;
         gbc_theirSoc.gridy = 2;
         getContentPane().add(theirSoc, gbc_theirSoc);
         
@@ -424,11 +433,58 @@ public class ConnectionFrame extends JFrame implements Observer
         revalidate();
         repaint();
     }
+
+    @Override
+    public void windowActivated(WindowEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void windowClosed(WindowEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void windowClosing(WindowEvent e) {
+        model.disconnectConnection();
+//        System.exit(0);
+    }
+
+    @Override
+    public void windowDeactivated(WindowEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void windowDeiconified(WindowEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void windowIconified(WindowEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void windowOpened(WindowEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
     
     public static void main(String [] args)
     {
         Model a = new Model();
         ConnectionFrame f = new ConnectionFrame(a);
         a.addObserver(f);
+        
+        Model b = new Model();
+        ConnectionFrame f2 = new ConnectionFrame(b);
+        b.addObserver(f2);
+        f2.setLocation(200, 200);
     }
 }

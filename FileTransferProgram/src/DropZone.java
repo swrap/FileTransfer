@@ -85,7 +85,7 @@ public class DropZone extends JPanel
             if((selected && drops.get(i).isFocused()) || !selected)
                 files.add(drops.get(i).getFile());
         }
-        return (File[]) drops.toArray();
+        return files.toArray(new File[files.size()]);
     }
     
     public void paintComponent(Graphics g)
@@ -131,6 +131,8 @@ public class DropZone extends JPanel
             this.setToolTipText(name);
             
             this.setBorder(BorderFactory.createLineBorder(Color.green));
+            
+            System.out.println(file.getName());
         }
         
         public boolean isFocused()

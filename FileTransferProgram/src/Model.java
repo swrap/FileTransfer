@@ -1,7 +1,9 @@
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,11 +21,13 @@ import java.util.Scanner;
 import javax.net.ssl.SSLSocket;
 import javax.swing.filechooser.FileSystemView;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
+
 public class Model extends Observable
 {
     public static final int WAITING_FOR_CONNECTION = 0, CONNECTED = 1, NOT_CONNECTED = 2;
     private static final int DISCONNECT = 0, MESSAGE = 1, FILE = 2;
-    private static final int MAX_FILE_SIZE = 4096;
+    public static int BUFFER = 4096;
     
     private SSLSocket ssl;
     private Log log;
@@ -104,40 +108,41 @@ public class Model extends Observable
     
     public void sendFiles(File [] files)
     {
-        
-    }
-    
-    public void sendFile(String pathname, String filename) throws FileNotFoundException
-    {
-        try{
-            
-            writer.write("FILEFROMSENDER:CODE:59895698 " + filename);
-            writer.flush();
-            
-            File file = new File(pathname, filename);
-            FileReader fileread = new FileReader(file);
-            
-            char [] buf = new char[MAX_FILE_SIZE];
-            int partitions = (int) ((file.length()/MAX_FILE_SIZE)+1);
-            
-            ByteArrayOutputStream byteout = new ByteArrayOutputStream(MAX_FILE_SIZE);
-            
-            for(int i = 0; i < partitions; ++i)
-            {
-                    int num = fileread.read(buf, 0, MAX_FILE_SIZE);
-                    String temp = new String(buf);
-                    if(temp.length() != MAX_FILE_SIZE)
-                    {
-                        temp = temp.substring(0, num);
-                    }
-                    byteout.write(temp.getBytes(), 0, MAX_FILE_SIZE);
-                    byteout.writeTo(out);
-                    out.flush();
-            }
-            
-        } catch (IOException e)
+        for(File file : files)
         {
-            e.printStackTrace();
+            try{
+                objectout.writeInt(this.FILE);
+                objectout.writeInt(this.BUFFER);
+                objectout.writeLong(file.length());
+                objectout.writeChars(file.getName());
+                objectout.writeChar('\n');
+                objectout.flush();
+                
+                byte [] buff = new byte[BUFFER];
+                int partitions = (int)(file.length()/BUFFER);
+                int lastpartitionsize = (int)(file.length() % BUFFER);
+                
+                OutputStream output = out;
+                FileInputStream fileIn = new FileInputStream(file);
+//                ByteArrayOutputStream byteout = new ByteArrayOutputStream(BUFFER);
+                
+                for(int i = 0; i < partitions; ++i)
+                {
+                    fileIn.read(buff, 0, BUFFER);
+                    output.write(buff, 0, BUFFER);
+                    output.flush();
+                }
+                
+                buff = new byte[lastpartitionsize];
+                fileIn.read(buff, 0, lastpartitionsize);
+                output.write(buff, 0, lastpartitionsize);
+                output.flush();
+            } catch (IOException e){
+                e.printStackTrace();
+            }
+            log.addMessage("Sent Files",false);
+            Model.this.setChanged();
+            Model.this.notifyObservers();
         }
     }
     
@@ -234,21 +239,23 @@ public class Model extends Observable
                     while(state == Model.this.CONNECTED)
                     {
                         int obtype = objectin.readInt();
-                        String s = scanner.nextLine();
                         if(obtype == Model.this.MESSAGE)
                         {
+                            String s = scanner.nextLine();
                             log.addMessage(s);
                         }
                         else if(obtype == Model.this.FILE)
                         {
-                            //code, name, size
-                            String [] both = s.split("\\s+");
-                            if(both.length != 3)
+                            System.out.println("HERE");
+                            int buffersize = objectin.readInt();
+                            long filesize = objectin.readLong();
+                            
+                            char tempS =objectin.readChar();
+                            String name = "";
+                            while(tempS != '\n')
                             {
-                                /**need to add throw error
-                                 * or there will be a 
-                                 * problem
-                                 */
+                                name += tempS;
+                                tempS = objectin.readChar();
                             }
                             
                             //makes new folder on desktop for downloads
@@ -258,13 +265,35 @@ public class Model extends Observable
                             if(!f.exists())
                                 f.mkdirs();
                             //creates file
-                            f = new File(f.getAbsolutePath(),both[1]);
+                            f = new File(f.getAbsolutePath(),name);
                             f.createNewFile();
                             
-                            InputStream input = new FileInputStream(f);
+                            byte [] buff = new byte[buffersize];
+                            FileOutputStream fileOut = new FileOutputStream(f, true);
+                            InputStream input = mysoc.getInputStream();
+//                            ByteArrayInputStream byteIn = new ByteArrayInputStream(buff);
+                            
+                            int partitions = (int)(filesize/buffersize);
+                            int lastpartitionsize = (int)(filesize % buffersize);
+                            System.out.println("STARTED");
+                            for(int i = 0; i < partitions; ++i)
+                            {
+                                input.read(buff, 0, buffersize);
+                                fileOut.write(buff, 0, buffersize);
+                                fileOut.flush();
+                            }
+                            
+                            buff = new byte[lastpartitionsize];
+                            input.read(buff, 0, lastpartitionsize);
+                            fileOut.write(buff, 0, lastpartitionsize);
+                            fileOut.flush();
+                            System.out.println("DONE WRITING");
+                            fileOut.close();
+                            log.addMessage("Receiving File", false);
                         }
                         else if(obtype == Model.this.DISCONNECT)
                         {
+                            String s = scanner.nextLine();
                             log.addMessage(s);
                             state = Model.this.NOT_CONNECTED;
                             writer.close();
