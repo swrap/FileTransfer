@@ -16,6 +16,8 @@ import javax.swing.JLabel;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 
 public class FileFrame extends JFrame implements Observer
@@ -27,7 +29,7 @@ public class FileFrame extends JFrame implements Observer
     private JLabel timeLeft;
     private JLabel speed;
     
-    public FileFrame()
+    public FileFrame(final Model model)
     {
         setTitle("File Transfer Info.");
         GridBagLayout gridBagLayout = new GridBagLayout();
@@ -44,7 +46,15 @@ public class FileFrame extends JFrame implements Observer
         gbc_lblBufferLength.gridy = 0;
         getContentPane().add(lblBufferLength, gbc_lblBufferLength);
         
-        slider = new JSlider();
+        slider = new JSlider(1, 16384, model.getBuffer());
+        slider.addChangeListener(new ChangeListener(){
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                model.setBuffer(slider.getValue());
+                bufferSize.setText(model.getBuffer() + "");
+            }            
+        });
         GridBagConstraints gbc_slider = new GridBagConstraints();
         gbc_slider.insets = new Insets(0, 0, 5, 5);
         gbc_slider.gridx = 1;
@@ -73,7 +83,7 @@ public class FileFrame extends JFrame implements Observer
         gbc_lblCurrentBufferSize.gridy = 1;
         getContentPane().add(lblCurrentBufferSize, gbc_lblCurrentBufferSize);
         
-        bufferSize = new JLabel("");
+        bufferSize = new JLabel(model.getBuffer() + "");
         GridBagConstraints gbc_bufferSize = new GridBagConstraints();
         gbc_bufferSize.insets = new Insets(0, 0, 5, 5);
         gbc_bufferSize.gridx = 1;
@@ -88,6 +98,7 @@ public class FileFrame extends JFrame implements Observer
         getContentPane().add(lblDownloadSpeed, gbc_lblDownloadSpeed);
         
         progressBar = new JProgressBar();
+//        progressBar.add();
         GridBagConstraints gbc_progressBar = new GridBagConstraints();
         gbc_progressBar.insets = new Insets(0, 0, 5, 5);
         gbc_progressBar.gridx = 1;
@@ -129,7 +140,6 @@ public class FileFrame extends JFrame implements Observer
     public void update(Observable o, Object arg)
     {
         Model m = (Model) arg;
-        
     }
     
 }

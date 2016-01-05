@@ -131,8 +131,6 @@ public class DropZone extends JPanel
             this.setToolTipText(name);
             
             this.setBorder(BorderFactory.createLineBorder(Color.green));
-            
-            System.out.println(file.getName());
         }
         
         public boolean isFocused()
@@ -216,7 +214,6 @@ public class DropZone extends JPanel
         @Override
         public void mousePressed(MouseEvent e)
         {
-
             clicked = e.getLocationOnScreen();
             Point temp = this.getLocationOnScreen();
             clicked.x = clicked.x < temp.x ? temp.x - clicked.x : clicked.x - temp.x;
@@ -257,24 +254,21 @@ public class DropZone extends JPanel
         }
 
         @Override
-        public void dragEnter(DropTargetDragEvent arg0)
+        public void dragEnter(DropTargetDragEvent e)
         {
-            // TODO Auto-generated method stub
-            
+            DropZone.this.setBackground(Color.green);            
         }
 
         @Override
         public void dragExit(DropTargetEvent e)
         {
-            // TODO Auto-generated method stub
-            
-        }
+            DropZone.this.setBackground(new Color(238,238,238));
+        }   
 
         @Override
         public void dragOver(DropTargetDragEvent e)
         {
             // TODO Auto-generated method stub
-            
         }
 
         @Override
@@ -310,6 +304,9 @@ public class DropZone extends JPanel
             }
             
             e.dropComplete(true);
+
+            DropZone.this.setBackground(new Color(238,238,238));
+
             DropZone.this.revalidate();
             DropZone.this.repaint();
         }
