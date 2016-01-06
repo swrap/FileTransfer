@@ -1,10 +1,6 @@
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -21,15 +17,13 @@ import java.util.Scanner;
 import javax.net.ssl.SSLSocket;
 import javax.swing.filechooser.FileSystemView;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
-
 public class Model extends Observable
 {
     public static final int WAITING_FOR_CONNECTION = 0, CONNECTED = 1, NOT_CONNECTED = 2;
     private static final int DISCONNECT = 0, MESSAGE = 1, FILE = 2;
     public static int BUFFER = 4096;
     
-    private SSLSocket ssl;
+//    private SSLSocket ssl;
     private Log log;
     private String username;
     private Socket mysoc;
@@ -41,6 +35,7 @@ public class Model extends Observable
     private String theirip;
     private Thread th;
     private boolean stop = false;
+    private boolean acceptCon = false;
     
     public Model()
     {
@@ -79,6 +74,11 @@ public class Model extends Observable
         return username;
     }
     
+    public boolean acceptingConnection()
+    {
+        return acceptCon;
+    }
+    
     public void setTheirPort(String theirport)
     {
         //need to throw exception
@@ -87,11 +87,11 @@ public class Model extends Observable
     
     public void sendMessage(String message)
     {
-        if(message.length() > 0 && state == this.CONNECTED)
+        if(message.length() > 0 && state == Model.CONNECTED)
         {
             try
             {
-                objectout.writeInt(this.MESSAGE);
+                objectout.writeInt(Model.MESSAGE);
                 objectout.flush();
                 log.addMessage(message, true);
                 writer.write(log.getLastMessage() + "\n");
@@ -111,8 +111,8 @@ public class Model extends Observable
         for(File file : files)
         {
             try{
-                objectout.writeInt(this.FILE);
-                objectout.writeInt(this.BUFFER);
+                objectout.writeInt(Model.FILE);
+                objectout.writeInt(Model.BUFFER);
                 objectout.writeLong(file.length());
                 objectout.writeChars(file.getName());
                 objectout.writeChar('\n');
@@ -124,7 +124,6 @@ public class Model extends Observable
                 
                 OutputStream output = out;
                 FileInputStream fileIn = new FileInputStream(file);
-//                ByteArrayOutputStream byteout = new ByteArrayOutputStream(BUFFER);
                 
                 for(int i = 0; i < partitions; ++i)
                 {
@@ -150,7 +149,7 @@ public class Model extends Observable
     {
         this.username = username;
         log.updateUsername(username);
-        state = this.WAITING_FOR_CONNECTION;
+        state = Model.WAITING_FOR_CONNECTION;
         this.setChanged();
         this.notifyObservers();
         
@@ -169,7 +168,7 @@ public class Model extends Observable
                         return;
                     }
                     mysoc = new Socket(theirip, theirport);
-                    state = Model.this.CONNECTED;
+                    state = Model.CONNECTED;
                     Model.this.setChanged();
                     Model.this.notifyObservers();
                 }catch (ConnectException e1){ 
@@ -189,7 +188,7 @@ public class Model extends Observable
                         out = mysoc.getOutputStream();
                         writer = new OutputStreamWriter(out);
                         ser.close();
-                        state = Model.this.CONNECTED;
+                        state = Model.CONNECTED;
                         Model.this.setChanged();
                         Model.this.notifyObservers();
                         
@@ -202,7 +201,7 @@ public class Model extends Observable
                     
                 }catch (UnknownHostException e3){
                     log.addMessage("Unknown host: AKA the ip given or address is not in existance", false);
-                    state = Model.this.NOT_CONNECTED;
+                    state = Model.NOT_CONNECTED;
                     Model.this.setChanged();
                     Model.this.notifyObservers();
                     if(stop)
@@ -211,7 +210,7 @@ public class Model extends Observable
                         return;
                     }
                 }catch (IOException e2){
-                    state = Model.this.NOT_CONNECTED;
+                    state = Model.NOT_CONNECTED;
                     log.addMessage("Error Connecting to Client", false);
                     Model.this.setChanged();
                     Model.this.notifyObservers();
@@ -236,15 +235,15 @@ public class Model extends Observable
                     
                     Scanner scanner = new Scanner(mysoc.getInputStream());
                     ObjectInputStream objectin = new ObjectInputStream(mysoc.getInputStream());
-                    while(state == Model.this.CONNECTED)
+                    while(state == Model.CONNECTED)
                     {
                         int obtype = objectin.readInt();
-                        if(obtype == Model.this.MESSAGE)
+                        if(obtype == Model.MESSAGE)
                         {
                             String s = scanner.nextLine();
                             log.addMessage(s);
                         }
-                        else if(obtype == Model.this.FILE)
+                        else if(obtype == Model.FILE)
                         {
                             System.out.println("HERE");
                             int buffersize = objectin.readInt();
@@ -271,7 +270,6 @@ public class Model extends Observable
                             byte [] buff = new byte[buffersize];
                             FileOutputStream fileOut = new FileOutputStream(f, true);
                             InputStream input = mysoc.getInputStream();
-//                            ByteArrayInputStream byteIn = new ByteArrayInputStream(buff);
                             
                             int partitions = (int)(filesize/buffersize);
                             int lastpartitionsize = (int)(filesize % buffersize);
@@ -291,11 +289,11 @@ public class Model extends Observable
                             fileOut.close();
                             log.addMessage("Receiving File", false);
                         }
-                        else if(obtype == Model.this.DISCONNECT)
+                        else if(obtype == Model.DISCONNECT)
                         {
                             String s = scanner.nextLine();
                             log.addMessage(s);
-                            state = Model.this.NOT_CONNECTED;
+                            state = Model.NOT_CONNECTED;
                             writer.close();
                             objectout.close();
                             out.close();
@@ -306,7 +304,6 @@ public class Model extends Observable
                     }
                 } catch (IOException e)
                 {
-                    // TODO Auto-generated catch block
 //                    e.printStackTrace();
                 }
             }
@@ -317,19 +314,19 @@ public class Model extends Observable
     public void cancelConnection()
     {
         stop = true;
-        state = Model.this.NOT_CONNECTED;
+        state = Model.NOT_CONNECTED;
         Model.this.setChanged();
         Model.this.notifyObservers();
     }
     
     public void disconnectConnection()
     {
-        if(state == this.CONNECTED)
+        if(state == Model.CONNECTED)
         {
             log.addMessage(username + " disconnected. Session ended.", false);
             try
             {
-                objectout.writeInt(this.DISCONNECT);
+                objectout.writeInt(Model.DISCONNECT);
                 objectout.flush();
                 writer.write(log.getLastMessage() + "\n");
                 writer.flush();
@@ -342,7 +339,7 @@ public class Model extends Observable
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }        
-            state = Model.this.NOT_CONNECTED;
+            state = Model.NOT_CONNECTED;
             Model.this.setChanged();
             Model.this.notifyObservers();
         }
