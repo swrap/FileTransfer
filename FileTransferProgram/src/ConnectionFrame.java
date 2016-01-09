@@ -28,13 +28,13 @@ import javax.swing.border.LineBorder;
 public class ConnectionFrame extends JFrame implements Observer, WindowListener
 {
     private JTextField textField;
-    private JComponent theirIp;
-    private JComponent mySoc;
-    private JComponent theirSoc;
+    private JTextField theirIp;
+    private JLabel mySoc;
+    private JTextField theirSoc;
     private JTextPane txtpnHello;
     private Model model;
     private JLabel lblConnected;
-    private JButton btnConnect;
+    private JButton addUser;
     private JComponent user;
     private DropZone dropZone;
     
@@ -47,9 +47,9 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setVisible(true);
         GridBagLayout gridBagLayout = new GridBagLayout();
-        gridBagLayout.columnWidths = new int[]{0, 105, 75, 0, 95, 0};
+        gridBagLayout.columnWidths = new int[]{0, 105, 75, 0, 95};
         gridBagLayout.rowHeights = new int[]{0, 22, 22, 22, 68, 22, 0, 0, 0, 0};
-        gridBagLayout.columnWeights = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
+        gridBagLayout.columnWeights = new double[]{1.0, 1.0, 1.0, 1.0, 1.0};
         gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout);
 
@@ -74,6 +74,23 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         getContentPane().add(user, gbc_user);
         ((JTextField)user).setColumns(10);
         
+        JLabel lblSocket = new JLabel("My Port:");
+        GridBagConstraints gbc_lblSocket = new GridBagConstraints();
+        gbc_lblSocket.gridwidth = 2;
+        gbc_lblSocket.anchor = GridBagConstraints.EAST;
+        gbc_lblSocket.insets = new Insets(0, 0, 5, 5);
+        gbc_lblSocket.gridx = 2;
+        gbc_lblSocket.gridy = 0;
+        getContentPane().add(lblSocket, gbc_lblSocket);
+        
+        mySoc = new JLabel();
+        mySoc.setText(model.getMyPort()+"");
+        GridBagConstraints gbc_mySoc = new GridBagConstraints();
+        gbc_mySoc.insets = new Insets(0, 0, 5, 0);
+        gbc_mySoc.gridx = 4;
+        gbc_mySoc.gridy = 0;
+        getContentPane().add(mySoc, gbc_mySoc);
+        
         JLabel lblYourIP = new JLabel("Your IP:");
         lblYourIP.setBackground(Color.WHITE);
         lblYourIP.setVerticalAlignment(SwingConstants.BOTTOM);
@@ -91,22 +108,24 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         gbc_lblLocalHost.gridy = 1;
         getContentPane().add(lblLocalHost, gbc_lblLocalHost);
         
-        JLabel lblSocket = new JLabel("My Port:");
-        GridBagConstraints gbc_lblSocket = new GridBagConstraints();
-        gbc_lblSocket.gridwidth = 2;
-        gbc_lblSocket.anchor = GridBagConstraints.EAST;
-        gbc_lblSocket.insets = new Insets(0, 0, 5, 5);
-        gbc_lblSocket.gridx = 2;
-        gbc_lblSocket.gridy = 1;
-        getContentPane().add(lblSocket, gbc_lblSocket);
+        JLabel lblSocket_1 = new JLabel("Their Port:");
+        GridBagConstraints gbc_lblSocket_1 = new GridBagConstraints();
+        gbc_lblSocket_1.gridwidth = 2;
+        gbc_lblSocket_1.anchor = GridBagConstraints.EAST;
+        gbc_lblSocket_1.insets = new Insets(0, 0, 5, 5);
+        gbc_lblSocket_1.gridx = 2;
+        gbc_lblSocket_1.gridy = 1;
+        getContentPane().add(lblSocket_1, gbc_lblSocket_1);
         
-        mySoc = new JLabel();
-        ((JLabel)mySoc).setText(model.getMyPort()+"");
-        GridBagConstraints gbc_mySoc = new GridBagConstraints();
-        gbc_mySoc.insets = new Insets(0, 0, 5, 0);
-        gbc_mySoc.gridx = 4;
-        gbc_mySoc.gridy = 1;
-        getContentPane().add(mySoc, gbc_mySoc);
+        theirSoc = new JTextField();
+        theirSoc.setText(model.getTheirPort()+"");
+        GridBagConstraints gbc_theirSoc = new GridBagConstraints();
+        gbc_theirSoc.insets = new Insets(0, 0, 5, 0);
+        gbc_theirSoc.fill = GridBagConstraints.HORIZONTAL;
+        gbc_theirSoc.gridx = 4;
+        gbc_theirSoc.gridy = 1;
+        getContentPane().add(theirSoc, gbc_theirSoc);
+        theirSoc.setColumns(10);
         
         JLabel lblOtherIP = new JLabel("Other IP: ");
         GridBagConstraints gbc_lblOtherIP = new GridBagConstraints();
@@ -117,33 +136,32 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         getContentPane().add(lblOtherIP, gbc_lblOtherIP);
         
         theirIp = new JTextField();
-        ((JTextField)theirIp).setText("localhost");
+        theirIp.setText("localhost");
         GridBagConstraints gbc_theirIp = new GridBagConstraints();
         gbc_theirIp.insets = new Insets(0, 0, 5, 5);
         gbc_theirIp.fill = GridBagConstraints.HORIZONTAL;
         gbc_theirIp.gridx = 1;
         gbc_theirIp.gridy = 2;
         getContentPane().add(theirIp, gbc_theirIp);
-        ((JTextField)theirIp).setColumns(10);
+        theirIp.setColumns(10);
         
-        JLabel lblSocket_1 = new JLabel("Their Port:");
-        GridBagConstraints gbc_lblSocket_1 = new GridBagConstraints();
-        gbc_lblSocket_1.gridwidth = 2;
-        gbc_lblSocket_1.anchor = GridBagConstraints.EAST;
-        gbc_lblSocket_1.insets = new Insets(0, 0, 5, 5);
-        gbc_lblSocket_1.gridx = 2;
-        gbc_lblSocket_1.gridy = 2;
-        getContentPane().add(lblSocket_1, gbc_lblSocket_1);
-        
-        theirSoc = new JTextField();
-        ((JTextField)theirSoc).setText(model.getTheirPort()+"");
-        GridBagConstraints gbc_theirSoc = new GridBagConstraints();
-        gbc_theirSoc.insets = new Insets(0, 0, 5, 0);
-        gbc_theirSoc.fill = GridBagConstraints.HORIZONTAL;
-        gbc_theirSoc.gridx = 4;
-        gbc_theirSoc.gridy = 2;
-        getContentPane().add(theirSoc, gbc_theirSoc);
-        ((JTextField)theirSoc).setColumns(10);
+        addUser = new JButton("Add User");
+        addUser.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) 
+            {
+                if(addUser.getText().equals("Add User"))
+                {
+                    //connect to the designated IP
+                    model.connect(theirIp.getText(), theirSoc.getText(), ((JTextField)user).getText());
+                }
+            }
+        });
+        GridBagConstraints gbc_addUser = new GridBagConstraints();
+        gbc_addUser.gridwidth = 3;
+        gbc_addUser.insets = new Insets(0, 0, 5, 0);
+        gbc_addUser.gridx = 2;
+        gbc_addUser.gridy = 2;
+        getContentPane().add(addUser, gbc_addUser);
         
         JLabel lblStatus = new JLabel("Status:");
         GridBagConstraints gbc_lblStatus = new GridBagConstraints();
@@ -161,31 +179,19 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         gbc_lblConnected.gridy = 3;
         getContentPane().add(lblConnected, gbc_lblConnected);
         
-        btnConnect = new JButton("Connect");
-        btnConnect.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) 
+        JButton disconnect = new JButton("Disconnect");
+        disconnect.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e)
             {
-                if(btnConnect.getText().equals("Connect"))
-                {
-                    //connect to the designated IP
-                    model.connect(((JTextField)theirIp).getText(), ((JTextField)theirSoc).getText(), ((JTextField)user).getText());
-                }
-                else if(btnConnect.getText().equals("Cancel"))
-                {
-                    model.cancelConnection();
-                }
-                else if(btnConnect.getText().equals("Disconnect"))
-                {
-                    model.disconnectConnection();
-                }
+                model.disconnectConnection(false);
             }
         });
-        GridBagConstraints gbc_btnConnect = new GridBagConstraints();
-        gbc_btnConnect.gridwidth = 3;
-        gbc_btnConnect.insets = new Insets(0, 0, 5, 0);
-        gbc_btnConnect.gridx = 2;
-        gbc_btnConnect.gridy = 3;
-        getContentPane().add(btnConnect, gbc_btnConnect);
+        GridBagConstraints gbc_disconnect = new GridBagConstraints();
+        gbc_disconnect.gridwidth = 3;
+        gbc_disconnect.insets = new Insets(0, 0, 5, 0);
+        gbc_disconnect.gridx = 2;
+        gbc_disconnect.gridy = 3;
+        getContentPane().add(disconnect, gbc_disconnect);
         
         JScrollPane scrollPane = new JScrollPane();
         GridBagConstraints gbc_scrollPane = new GridBagConstraints();
@@ -241,7 +247,6 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         //sets the starting defaults
         lblConnected.setBackground(Color.RED);
         lblConnected.setText("NOT Connected");
-        btnConnect.setText("Connect");
         
         JScrollPane scrollPane_1 = new JScrollPane();
         scrollPane_1.setToolTipText("Drop Files");
@@ -326,75 +331,50 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
         case Model.WAITING_FOR_CONNECTION:
             lblConnected.setBackground(Color.YELLOW);
             lblConnected.setText("Waiting For Connection");
-            btnConnect.setText("Cancel");
-            change();
+//            change();
             break;
         case Model.CONNECTED:
             lblConnected.setBackground(Color.GREEN);
             lblConnected.setText("Connected");
-            btnConnect.setText("Disconnect");
             break;
         case Model.NOT_CONNECTED:
             lblConnected.setBackground(Color.RED);
             lblConnected.setText("NOT Connected");
-            btnConnect.setText("Connect");
-            change();
+//            change();
             break;
         }
 
         txtpnHello.setText(model.getLog());
+        mySoc.setText(model.getMyPort()+"");
+        theirIp.setText(model.getTheirIp());
+        theirSoc.setText(model.getTheirPort()+"");
+
         //sets the text to the get log
-        if(theirSoc instanceof JTextField)
+        if(user instanceof JTextField)
         {
-            ((JLabel)mySoc).setText(model.getMyPort()+"");
-            ((JTextField)theirSoc).setText(model.getTheirPort()+"");
-            ((JTextField)theirIp).setText(model.getTheirIp());
             ((JTextField)user).setText(model.getUsername());
         }
         else
         {
-            ((JLabel)theirSoc).setText(model.getTheirPort()+"");
-            ((JLabel)theirIp).setText(model.getTheirIp());
             ((JLabel)user).setText(model.getUsername());
         }
     }
     
     public void change()
     {
-        getContentPane().remove(theirSoc);
-        getContentPane().remove(theirIp);
         getContentPane().remove(user);
         
-
-        GridBagConstraints gbc_theirSoc = new GridBagConstraints();
-        GridBagConstraints gbc_theirIp = new GridBagConstraints();
         GridBagConstraints gbc_user = new GridBagConstraints();
 
         if(theirSoc instanceof JTextField)
         {
-            theirSoc = new JLabel(((JTextField)theirSoc).getText());
-            theirIp = new JLabel(((JTextField)theirIp).getText());
             user = new JLabel(((JTextField)user).getText());
         }
         else
         {
-            theirSoc = new JTextField(((JLabel)theirSoc).getText());
-            theirIp = new JTextField(((JLabel)theirIp).getText());
             user = new JTextField(((JLabel)user).getText());
-            gbc_theirSoc.fill = GridBagConstraints.HORIZONTAL;
-            gbc_theirIp.fill = GridBagConstraints.HORIZONTAL;
             gbc_user.fill = GridBagConstraints.HORIZONTAL;
         }
-        
-        gbc_theirSoc.insets = new Insets(0, 0, 5, 0);
-        gbc_theirSoc.gridx = 4;
-        gbc_theirSoc.gridy = 2;
-        getContentPane().add(theirSoc, gbc_theirSoc);
-        
-        gbc_theirIp.insets = new Insets(0, 0, 5, 5);
-        gbc_theirIp.gridx = 1;
-        gbc_theirIp.gridy = 2;
-        getContentPane().add(theirIp, gbc_theirIp);
         
         gbc_user.insets = new Insets(0, 0, 5, 5);
         gbc_user.gridx = 1;
@@ -419,8 +399,7 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
 
     @Override
     public void windowClosing(WindowEvent e) {
-        model.disconnectConnection();
-//        System.exit(0);
+        model.disconnectConnection(true);
     }
 
     @Override
@@ -449,11 +428,11 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
     
     public static void main(String [] args)
     {
-        Model a = new Model();
+        Model a = new Model(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
         ConnectionFrame f = new ConnectionFrame(a);
         a.addObserver(f);
         
-        Model b = new Model();
+        Model b = new Model(Integer.parseInt(args[1]), Integer.parseInt(args[0]));
         ConnectionFrame f2 = new ConnectionFrame(b);
         b.addObserver(f2);
         f2.setLocation(200, 200);
