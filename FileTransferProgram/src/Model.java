@@ -1,9 +1,11 @@
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.StreamCorruptedException;
+import java.net.SocketException;
 import java.util.Observable;
 import java.util.Scanner;
 
@@ -110,7 +112,7 @@ public class Model extends Observable
     public void addedUser(String s)
     {
         this.log.addMessage("Connected to user: " + s, false);
-        this.state = this.CONNECTED;
+        this.state = Model.CONNECTED;
         this.setChanged();
         this.notifyObservers();
     }
@@ -182,7 +184,7 @@ public class Model extends Observable
         return log.toString();
     }
     
-    public void input(ObjectInputStream objectin, Scanner scanner)
+    public void input(InputStream in, ObjectInputStream objectin, Scanner scanner)
     {
         while(true)
         {
@@ -190,7 +192,7 @@ public class Model extends Observable
             try
             {
                 int obtype = objectin.readInt();
-                System.out.println("HERE: " + obtype);
+
                 if(obtype == Model.MESSAGE)
                 {
                     String s = scanner.nextLine();
@@ -227,13 +229,13 @@ public class Model extends Observable
                     System.out.println("STARTED");
                     for(int i = 0; i < partitions; ++i)
                     {
-//                        in.read(buff, 0, buffersize);
+                        in.read(buff, 0, buffersize);
                         fileOut.write(buff, 0, buffersize);
                         fileOut.flush();
                     }
                     
                     buff = new byte[lastpartitionsize];
-//                    in.read(buff, 0, lastpartitionsize);
+                    in.read(buff, 0, lastpartitionsize);
                     fileOut.write(buff, 0, lastpartitionsize);
                     fileOut.flush();
                     System.out.println("DONE WRITING");
@@ -244,21 +246,32 @@ public class Model extends Observable
                 {
                     String s = scanner.nextLine();
                     log.addMessage(s);
-    //                scanner.close();
+                    state = Model.NOT_CONNECTED;
                     Model.this.setChanged();
                     Model.this.notifyObservers();
                     return;
                 }
-    //            scanner.close();
                 Model.this.setChanged();
                 Model.this.notifyObservers();
-            } catch (StreamCorruptedException e1) {
+            } catch (SocketException e0) {
+                if(!e0.getMessage().equals("Socket closed"))
+                {
+                    e0.printStackTrace();
+                }
+                //nothing is wrong the socket is closed
+                break;
+            } catch (EOFException e1) {
+                //nothing is wrong the socket is closed
+                break;
+            } catch (StreamCorruptedException e2) {
                 System.err.println("Model.java Closing problems");
-                e1.printStackTrace();
-            } catch (IOException e2)
+                e2.printStackTrace();
+            } catch (IOException e3)
             {
                 System.err.println("Model.java Problem reading "
                         + "input.");
+                e3.printStackTrace();
+                System.exit(0);
             }
         }
     }

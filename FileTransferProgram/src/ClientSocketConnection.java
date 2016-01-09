@@ -41,18 +41,18 @@ public class ClientSocketConnection {
         sockets.clear();
     }
 
+    public void removeSoc(SocketThread soc)
+    {
+        sockets.remove(soc);
+    }
+    
     public boolean connect(String ip, String port) {
-        System.out.println("PROTASDF: " + port);
         try {
             Socket soc = new Socket(ip, Integer.parseInt(port));
-//            if (initialHandshake(soc)) {
             SocketThread socth = new SocketThread(soc);
             socth.start();
             sockets.add(socth);
             model.setConnected(Model.CONNECTED);
-//            } else {
-//                soc.close();
-//            }
             return true;
         } catch (IOException e) {
             System.err.println("ClientSocketConnection.java Error with "
@@ -61,46 +61,37 @@ public class ClientSocketConnection {
         }
     }
 
-//    private boolean initialHandshake(Socket soc) {
-//        String user = model.getUsername();
-//
-//        try {
-//            ObjectOutputStream oos = new ObjectOutputStream(soc.getOutputStream());
-//            oos.writeChars(user);
-//            oos.writeChar('\n');
-//            oos.flush();
-//            return true;
-//        } catch (IOException e) {
-//            System.err.println("ClientSocketConnection.java Error with"
-//                    + " initial handshake.");
-//        }
-//        return false;
-//    }
-
     public void sendMessage(String message) {
-//        try {
-//            for (SocketThread s : sockets) {
-//                System.out.println("MESSAGE: " + message);
-////                s.objectout.writeInt(Model.MESSAGE);
-////                s.objectout.flush();
-////                s.writer.write(message + "\n");
-////                s.writer.flush();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            for (SocketThread s : sockets) {
+                OutputStream out = s.getOutputStream();
+                ObjectOutputStream objectout = s.getObjectOutputStream();
+                OutputStreamWriter writer = s.getOutputStreamWriter();
+                
+                System.out.println("MESSAGE: " + message);
+                objectout.writeInt(Model.MESSAGE);
+                objectout.flush();
+                writer.write(message + "\n");
+                writer.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void sendFile(File file) {
         for (SocketThread s : sockets) {
             try {
+                OutputStream out = s.getOutputStream();
+                ObjectOutputStream objectout = s.getObjectOutputStream();
+                
                 int buffer = model.getBuffer();
-//                s.objectout.writeInt(Model.FILE);
-//                s.objectout.writeInt(buffer);
-//                s.objectout.writeLong(file.length());
-//                s.objectout.writeChars(file.getName());
-//                s.objectout.writeChar('\n');
-//                s.objectout.flush();
+                objectout.writeInt(Model.FILE);
+                objectout.writeInt(buffer);
+                objectout.writeLong(file.length());
+                objectout.writeChars(file.getName());
+                objectout.writeChar('\n');
+                objectout.flush();
 
                 byte[] buff = new byte[buffer];
                 int partitions = (int) (file.length() / buffer);
@@ -108,17 +99,17 @@ public class ClientSocketConnection {
 
                 FileInputStream fileIn = new FileInputStream(file);
 
-//                for (int i = 0; i < partitions; ++i) {
-//                    fileIn.read(buff, 0, buffer);
-//                    s.out.write(buff, 0, buffer);
-//                    s.out.flush();
-//                }
-//
-//                buff = new byte[lastpartitionsize];
-//                fileIn.read(buff, 0, lastpartitionsize);
-//                s.out.write(buff, 0, lastpartitionsize);
-//                s.out.flush();
-//                fileIn.close();
+                for (int i = 0; i < partitions; ++i) {
+                    fileIn.read(buff, 0, buffer);
+                    out.write(buff, 0, buffer);
+                    out.flush();
+                }
+
+                buff = new byte[lastpartitionsize];
+                fileIn.read(buff, 0, lastpartitionsize);
+                out.write(buff, 0, lastpartitionsize);
+                out.flush();
+                fileIn.close();
             } catch (IOException e) {
                 System.err
                         .println("ClientSocketConnection.java Error sending"
@@ -128,19 +119,28 @@ public class ClientSocketConnection {
     }
 
     private class SocketThread extends Thread {
-        private boolean running = true;
         private Socket soc;
         private String username = "";
+        private ObjectOutputStream oos;
+        private OutputStreamWriter write;
 
         public SocketThread(Socket soc) {
             super();
             this.soc = soc;
         }
 
-        public void kill() {
-            running = false;
+        public OutputStreamWriter getOutputStreamWriter() {
+            return write;
+        }
 
+        public ObjectOutputStream getObjectOutputStream() {
+            return oos;
+        }
+
+        public void kill() {
             try {
+                oos.close();
+                write.close();
                 soc.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -148,29 +148,38 @@ public class ClientSocketConnection {
         }
 
         public void kill(String message) {
-            running = false;
-
             try {
-                ObjectOutputStream out = new ObjectOutputStream(soc.getOutputStream());
-                out.writeInt(Model.DISCONNECT);
-                out.flush();
-                out.writeChars(message);
-                out.writeChar('\n');
-                out.flush();
-                out.close();
+                oos.writeInt(Model.DISCONNECT);
+                oos.flush();
+                write.write(message + "\n");
+                write.flush();
+                oos.close();
+                write.close();
                 soc.close();
             } catch (IOException e) {
                 // closing the socket will throw an exception
+                e.printStackTrace();
             }
         }
 
         public String getUsername() {
             return username;
         }
+        
+        public OutputStream getOutputStream()
+        {
+            try {
+                return soc.getOutputStream();
+            } catch (IOException e) {
+                //could not get outputstream
+                e.printStackTrace();
+            }
+            return null;
+        }
 
         public void run() {
             try {                
-                OutputStreamWriter write = new OutputStreamWriter(soc.getOutputStream());
+                write = new OutputStreamWriter(soc.getOutputStream());
                 
                 write.write(model.getUsername()+ '\n');
                 write.flush();
@@ -180,18 +189,17 @@ public class ClientSocketConnection {
                     model.addedUser(user);
                     this.username = user;
                 }
+                oos = new ObjectOutputStream(soc.getOutputStream());
 
                 ObjectInputStream ins = new ObjectInputStream(soc.getInputStream());
                 
-                model.input(ins, scan);
-                scan.close();
-                ins.close();
+                model.input(soc.getInputStream(),ins, scan);
                 soc.close();
+                ClientSocketConnection.this.removeSoc(this);
             } catch (IOException e) {
                 System.err
                         .println("ClientSocketConnection.java Error with "
                                 + "socket or inputstream.");
-//                e.printStackTrace();
             }
         }
     }
@@ -246,7 +254,6 @@ public class ClientSocketConnection {
                     break;
                 }
             }
-            System.out.println("ENDED");
         }
     }
 }

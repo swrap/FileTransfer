@@ -13,7 +13,6 @@ import java.util.Observable;
 import java.util.Observer;
 
 import javax.swing.JLabel;
-import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.event.ChangeEvent;

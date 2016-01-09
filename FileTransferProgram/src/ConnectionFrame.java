@@ -428,13 +428,18 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
     
     public static void main(String [] args)
     {
-        Model a = new Model(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+        Model a = new Model(4000, 4001);
         ConnectionFrame f = new ConnectionFrame(a);
         a.addObserver(f);
         
-        Model b = new Model(Integer.parseInt(args[1]), Integer.parseInt(args[0]));
+        Model b = new Model(4001, 4000);
         ConnectionFrame f2 = new ConnectionFrame(b);
         b.addObserver(f2);
         f2.setLocation(200, 200);
+        
+        Model c = new Model(4002, 4000);
+        ConnectionFrame f3 = new ConnectionFrame(c);
+        b.addObserver(f3);
+        f3.setLocation(400, 400);
     }
 }
