@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.StreamCorruptedException;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Observable;
 import java.util.Scanner;
 
@@ -19,26 +21,20 @@ public class Model extends Observable
     
     private Log log;
     private String username = "user";
+    private String password = "";
     private int state = NOT_CONNECTED;
-    private int myport = 5000, theirport = 5001;
-    private String theirip;
-    private boolean acceptCon = true;
+    private int myport = 4000;
+    private boolean acceptCon = false;
     private ClientSocketConnection csc;
     
-    public Model()
+    public Model(String username, String password)
     {
-        this.myport = 5000;
-        this.theirport = 5001;
+        this.username = username;
+        this.password = password;
         log = new Log(username);
         csc = new ClientSocketConnection(this);
-    }
-    
-    public Model(int myport, int theirport)
-    {
-        this.myport = myport;
-        this.theirport = theirport;
-        log = new Log(username);
-        csc = new ClientSocketConnection(this);
+        this.setChanged();
+        this.notifyObservers();
     }
     
     public int getMyPort()
@@ -68,21 +64,6 @@ public class Model extends Observable
         return state;
     }
     
-    public String getTheirIp()
-    {
-        return theirip;
-    }
-    
-    public int getTheirPort()
-    {
-        return theirport;
-    }
-    
-    public void setTheirPort(String theirport)
-    {
-        this.theirport = Integer.parseInt(theirport);
-    }
-    
     public String getUsername()
     {
         return username;
@@ -92,6 +73,11 @@ public class Model extends Observable
     {
         this.username = username;
         log.updateUsername(username);
+    }
+    
+    public void setAcceptingConnection(boolean acceptCon)
+    {
+        this.acceptCon = acceptCon;
     }
     
     public boolean acceptingConnection()
@@ -107,6 +93,18 @@ public class Model extends Observable
     public void setBuffer(int buffer)
     {
         this.BUFFER = buffer;
+    }
+    
+    public int getState()
+    {
+        return state;
+    }
+    
+    public void setState(int state)
+    {
+        this.state = state;
+        Model.this.setChanged();
+        Model.this.notifyObservers();
     }
     
     public void addedUser(String s)
@@ -139,29 +137,39 @@ public class Model extends Observable
         }
     }
     
-    public void connect(String ip, String soc, String username)
+    public boolean connect(String ip, int port)
     {
-        this.username = username;
-        log.updateUsername(username);
         state = Model.WAITING_FOR_CONNECTION;
-        theirip = ip;
-        theirport = Integer.parseInt(soc);
         this.setChanged();
         this.notifyObservers();
         
-        if(csc.connect(ip, soc))
+        try {
+            if((ip.equals(InetAddress.getLocalHost().getHostAddress()) ||
+                    ip.equals("localhost")) && port == myport || ip.equals(""))
+            {
+                state = Model.NOT_CONNECTED;
+                this.setChanged();
+                this.notifyObservers();
+                return false;
+            }
+        } catch (UnknownHostException e) {
+            System.err.println("Model.java Error finding local IP");
+        }
+        
+        if(csc.connect(ip, port))
         {
             state = Model.CONNECTED;
-            log.addMessage("Connecting to ip: " + theirip, false);
             this.setChanged();
             this.notifyObservers();
+            return true;
         }
         else
         {
             state = Model.NOT_CONNECTED;
-            log.addMessage("Failed connect to user with ip: " + theirip, false);
+            log.addMessage("Failed connect to user with ip: " + ip + " on port: " + port, false);
             this.setChanged();
             this.notifyObservers();
+            return false;
         }
     }
     
@@ -226,7 +234,6 @@ public class Model extends Observable
                     
                     int partitions = (int)(filesize/buffersize);
                     int lastpartitionsize = (int)(filesize % buffersize);
-                    System.out.println("STARTED");
                     for(int i = 0; i < partitions; ++i)
                     {
                         in.read(buff, 0, buffersize);
@@ -238,7 +245,6 @@ public class Model extends Observable
                     in.read(buff, 0, lastpartitionsize);
                     fileOut.write(buff, 0, lastpartitionsize);
                     fileOut.flush();
-                    System.out.println("DONE WRITING");
                     fileOut.close();
                     log.addMessage("Receiving File", false);
                 }
@@ -246,7 +252,6 @@ public class Model extends Observable
                 {
                     String s = scanner.nextLine();
                     log.addMessage(s);
-                    state = Model.NOT_CONNECTED;
                     Model.this.setChanged();
                     Model.this.notifyObservers();
                     return;

@@ -1,8 +1,6 @@
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -10,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -18,7 +17,7 @@ public class ClientSocketConnection {
     private Model model;
     private boolean isAlive = true;
     private ServerThread serverThread;
-
+    
     public ClientSocketConnection(Model model) {
         this.model = model;
         this.serverThread = new ServerThread();
@@ -46,9 +45,9 @@ public class ClientSocketConnection {
         sockets.remove(soc);
     }
     
-    public boolean connect(String ip, String port) {
+    public boolean connect(String ip, int port) {
         try {
-            Socket soc = new Socket(ip, Integer.parseInt(port));
+            Socket soc = new Socket(ip, port);
             SocketThread socth = new SocketThread(soc);
             socth.start();
             sockets.add(socth);
@@ -56,7 +55,7 @@ public class ClientSocketConnection {
             return true;
         } catch (IOException e) {
             System.err.println("ClientSocketConnection.java Error with "
-                    + "creating socket.");
+                    + "creating socket returning false.");
             return false;
         }
     }
@@ -68,7 +67,6 @@ public class ClientSocketConnection {
                 ObjectOutputStream objectout = s.getObjectOutputStream();
                 OutputStreamWriter writer = s.getOutputStreamWriter();
                 
-                System.out.println("MESSAGE: " + message);
                 objectout.writeInt(Model.MESSAGE);
                 objectout.flush();
                 writer.write(message + "\n");
@@ -123,10 +121,17 @@ public class ClientSocketConnection {
         private String username = "";
         private ObjectOutputStream oos;
         private OutputStreamWriter write;
+        private int port = 0;
+        private String ip = "";
 
         public SocketThread(Socket soc) {
             super();
             this.soc = soc;
+        }
+        
+        public SocketAddress getTheirAddress()
+        {
+            return soc.getRemoteSocketAddress();
         }
 
         public OutputStreamWriter getOutputStreamWriter() {
@@ -176,10 +181,21 @@ public class ClientSocketConnection {
             }
             return null;
         }
+        
+        private void initialConnection()
+        {
+            
+        }
 
         public void run() {
-            try {                
+            try {
                 write = new OutputStreamWriter(soc.getOutputStream());
+
+                //need to have it when adding new users
+                //that it will send them all the connected users
+                //need a new connection protocol
+                //need an initial connection frame for starting up
+                //to join a chat.
                 
                 write.write(model.getUsername()+ '\n');
                 write.flush();
@@ -190,12 +206,16 @@ public class ClientSocketConnection {
                     this.username = user;
                 }
                 oos = new ObjectOutputStream(soc.getOutputStream());
-
+                
                 ObjectInputStream ins = new ObjectInputStream(soc.getInputStream());
                 
                 model.input(soc.getInputStream(),ins, scan);
                 soc.close();
                 ClientSocketConnection.this.removeSoc(this);
+                if(sockets.size() == 0)
+                {
+                    model.setState(Model.NOT_CONNECTED);
+                }
             } catch (IOException e) {
                 System.err
                         .println("ClientSocketConnection.java Error with "

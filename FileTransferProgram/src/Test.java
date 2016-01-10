@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -11,6 +12,12 @@ public class Test
 
     public static void main(String [] args)
     {
+//        try {
+//            System.out.println(InetAddress.getLocalHost().getHostAddress());
+//        } catch (UnknownHostException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
         try {
             Thread th = new Thread()
             {
@@ -20,6 +27,8 @@ public class Test
                 try {
                     ser = new ServerSocket(4400);
                     s2 = ser.accept();
+                    System.out.println(s2.getRemoteSocketAddress() + " " + s2.getPort() + 
+                            " " + s2.getInetAddress());
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -33,8 +42,8 @@ public class Test
 //            out.writeInt(122);
 //            out.flush();
             
-            ObjectInputStream in = new ObjectInputStream(s1.getInputStream());
-            System.out.println(in.readInt());
+//            ObjectInputStream in = new ObjectInputStream(s1.getInputStream());
+//            System.out.println(in.readInt());
             
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
