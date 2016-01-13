@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -32,32 +33,70 @@ public class ClientSocketConnection {
         isAlive = false;
         serverThread.kill();
     }
-
-    public void killConnections(String message) {
+    
+    public synchronized void killConnections(String message) {
         for (SocketThread s : sockets) {
             s.kill(message);
         }
         sockets.clear();
     }
 
-    public void removeSoc(SocketThread soc)
+    public synchronized void removeSoc(SocketThread soc)
     {
         sockets.remove(soc);
     }
     
-    public boolean connect(String ip, int port) {
+    private void connect(Socket soc) {
+        SocketThread socth = new SocketThread(soc);
+        socth.start();
+        if(socth.connectionSuccessful())
+        {
+            sockets.add(socth);
+            model.addedUser(socth.getUsername());
+        }
+        else
+        {
+            model.unsuccessfulConnection(socth.getUsername(), socth.getSerSocAddress());
+        }
+    }
+    
+    public void connect(SocketAddress [] socAdd) {
+        try {
+            for(SocketAddress tempS : socAdd)
+            {
+                Socket soc = new Socket();
+                soc.connect(tempS);
+                SocketThread socth = new SocketThread(soc, true);
+                socth.start();
+                if(socth.connectionSuccessful())
+                {
+                    sockets.add(socth);
+                    model.addedUser(socth.getUsername());
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("ClientSocketConnection.java Error with "
+                    + "adding other clients.");
+            e.printStackTrace();
+        }
+    }
+    
+    public String connect(String ip, int port) {
         try {
             Socket soc = new Socket(ip, port);
             SocketThread socth = new SocketThread(soc);
             socth.start();
-            sockets.add(socth);
-            model.setConnected(Model.CONNECTED);
-            return true;
+            if(socth.connectionSuccessful())
+            {
+                sockets.add(socth);
+                return socth.getUsername();
+            }
         } catch (IOException e) {
             System.err.println("ClientSocketConnection.java Error with "
                     + "creating socket returning false.");
-            return false;
+            return null;
         }
+        return null;
     }
 
     public void sendMessage(String message) {
@@ -116,17 +155,37 @@ public class ClientSocketConnection {
         }
     }
 
-    private class SocketThread extends Thread {
+    private class SocketThread extends Thread implements Serializable{
+        private boolean successConnect = false, not_verified = true;
         private Socket soc;
         private String username = "";
         private ObjectOutputStream oos;
         private OutputStreamWriter write;
-        private int port = 0;
-        private String ip = "";
+        private SocketAddress serSocAdd;
+        private boolean multiple = false;
 
         public SocketThread(Socket soc) {
             super();
             this.soc = soc;
+        }
+        
+        public SocketThread(Socket soc, boolean multiple) {
+            super();
+            this.soc = soc;
+            this.multiple = multiple;
+        }
+        
+        public boolean connectionSuccessful() {
+            while(not_verified)
+            {
+                this.yield();
+            }
+            return successConnect;
+        }
+        
+        public Socket getSocket()
+        {
+            return soc;
         }
         
         public SocketAddress getTheirAddress()
@@ -150,6 +209,11 @@ public class ClientSocketConnection {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+        
+        public SocketAddress getSocketRemoteAddress()
+        {
+            return soc.getRemoteSocketAddress();
         }
 
         public void kill(String message) {
@@ -182,44 +246,91 @@ public class ClientSocketConnection {
             return null;
         }
         
-        private void initialConnection()
+        public SocketAddress getSerSocAddress()
         {
-            
+            return serSocAdd;
         }
 
         public void run() {
             try {
                 write = new OutputStreamWriter(soc.getOutputStream());
 
-                //need to have it when adding new users
-                //that it will send them all the connected users
-                //need a new connection protocol
-                //need an initial connection frame for starting up
-                //to join a chat.
-                
+                Scanner scan = new Scanner(soc.getInputStream());
+                //writes username
                 write.write(model.getUsername()+ '\n');
                 write.flush();
-                Scanner scan = new Scanner(soc.getInputStream());
+                
                 if (scan.hasNextLine()) {
-                    String user = scan.nextLine();
-                    model.addedUser(user);
-                    this.username = user;
+                    this.username = scan.nextLine();
                 }
+                
+                //write serverthread socket address
                 oos = new ObjectOutputStream(soc.getOutputStream());
+                oos.writeObject(serverThread.getSocketAddress());
+                oos.flush();
                 
+                //read serverthread socket address
                 ObjectInputStream ins = new ObjectInputStream(soc.getInputStream());
+                serSocAdd = (SocketAddress)(ins.readObject());
                 
-                model.input(soc.getInputStream(),ins, scan);
-                soc.close();
-                ClientSocketConnection.this.removeSoc(this);
-                if(sockets.size() == 0)
+                //write connected
+                oos.writeBoolean(model.isConnected());
+                oos.flush();
+                
+                //read connected
+                boolean temp = ins.readBoolean();
+                
+                //write multiple
+                oos.writeBoolean(multiple);
+                oos.flush();
+                
+                //read multiple
+                boolean tempM = ins.readBoolean();
+                                
+                if(tempM || multiple || !temp || !model.isConnected())
                 {
-                    model.setState(Model.NOT_CONNECTED);
+                    if(!temp)
+                    {
+                        oos.writeInt(Model.SOCKETS);
+                        oos.writeInt(sockets.size());
+                        oos.flush();
+                        for(SocketThread s : sockets)
+                        {
+                            if(s != this)
+                            {
+                                oos.writeObject(s.getSerSocAddress());
+                                oos.flush();
+                            }
+                        }
+                    }
+                    
+                    this.not_verified = false;
+                    this.successConnect = true;
+                    model.input(soc.getInputStream(),ins, scan);
                 }
-            } catch (IOException e) {
+                else
+                {
+                    model.doubleSession(this.getUsername(), this.soc.getRemoteSocketAddress());
+                    this.not_verified = false;
+                    this.successConnect = false;
+                }
+                soc.close();
+            } catch (IOException | ClassNotFoundException e) {
                 System.err
                         .println("ClientSocketConnection.java Error with "
                                 + "socket or inputstream.");
+                e.printStackTrace();
+
+                this.not_verified = false;
+                this.successConnect = false;
+                
+                model.disconnectConnection(false);
+            }
+
+            ClientSocketConnection.this.removeSoc(this);
+            if(sockets.size() == 0)
+            {
+                model.setState(Model.NOT_CONNECTED);
             }
         }
     }
@@ -240,6 +351,11 @@ public class ClientSocketConnection {
                 }
             }
         }
+        
+        public SocketAddress getSocketAddress()
+        {
+            return ser.getLocalSocketAddress();
+        }
 
         public void run() {
             while (true) {
@@ -247,11 +363,9 @@ public class ClientSocketConnection {
                     ser = new ServerSocket(model.getMyPort());
                     while (isAlive) {
                         Socket tempS = ser.accept();
-                        if (model.acceptingConnection()) {
-                            SocketThread socth = new SocketThread(tempS);
-                            socth.start();
-                            sockets.add(socth);
-                            model.setConnected(Model.CONNECTED);
+                        if (model.acceptingConnection())
+                        {
+                            ClientSocketConnection.this.connect(tempS);
                         } else {
                             tempS.close();
                         }

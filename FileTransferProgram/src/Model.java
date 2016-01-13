@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.StreamCorruptedException;
 import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Observable;
@@ -16,7 +18,7 @@ import javax.swing.filechooser.FileSystemView;
 public class Model extends Observable
 {
     public static final int WAITING_FOR_CONNECTION = 0, CONNECTED = 1, NOT_CONNECTED = 2;
-    public static final int DISCONNECT = 0, MESSAGE = 1, FILE = 2;
+    public static final int DISCONNECT = 0, MESSAGE = 1, FILE = 2, SOCKETS = 3;
     private int BUFFER = 4096;
     
     private Log log;
@@ -59,9 +61,9 @@ public class Model extends Observable
         this.notifyObservers();
     }
     
-    public int isConnected()
+    public boolean isConnected()
     {
-        return state;
+        return (state == Model.CONNECTED);
     }
     
     public String getUsername()
@@ -100,6 +102,11 @@ public class Model extends Observable
         this.BUFFER = buffer;
     }
     
+    public String getPassword()
+    {
+        return password;
+    }
+    
     public void setState(int state)
     {
         this.state = state;
@@ -107,12 +114,11 @@ public class Model extends Observable
         Model.this.notifyObservers();
     }
     
-    public void addedUser(String s)
+    public void unsuccessfulConnection(String username, SocketAddress socketAddress)
     {
-        this.log.addMessage("Connected to user: " + s, false);
-        this.state = Model.CONNECTED;
-        this.setChanged();
-        this.notifyObservers();
+        log.addMessage("Failed connection with user: " + username + " Socket Address: " + socketAddress.toString(), false);
+        Model.this.setChanged();
+        Model.this.notifyObservers();
     }
     
     public void sendMessage(String message)
@@ -137,12 +143,16 @@ public class Model extends Observable
         }
     }
     
-    public boolean connect(String ip, int port)
+    public void addedUser(String s)
     {
-        state = Model.WAITING_FOR_CONNECTION;
+        state = Model.CONNECTED;
+        log.addMessage("Connected to user: " + s, false);
         this.setChanged();
         this.notifyObservers();
-        
+    }
+    
+    public boolean connect(String ip, int port)
+    {
         try {
             if((ip.equals(InetAddress.getLocalHost().getHostAddress()) ||
                     ip.equals("localhost")) && port == myport || ip.equals(""))
@@ -156,16 +166,17 @@ public class Model extends Observable
             System.err.println("Model.java Error finding local IP");
         }
         
-        if(csc.connect(ip, port))
+        String s = null;
+        if((s = csc.connect(ip, port)) != null)
         {
             state = Model.CONNECTED;
+            log.addMessage("Connected to user: " + s, false);
             this.setChanged();
             this.notifyObservers();
             return true;
         }
         else
         {
-            state = Model.NOT_CONNECTED;
             log.addMessage("Failed connect to user with ip: " + ip + " on port: " + port, false);
             this.setChanged();
             this.notifyObservers();
@@ -182,7 +193,6 @@ public class Model extends Observable
             csc.killClientSocket();
             acceptCon = false;
         }
-        state = Model.NOT_CONNECTED;
         Model.this.setChanged();
         Model.this.notifyObservers();
     }
@@ -190,6 +200,14 @@ public class Model extends Observable
     public String getLog()
     {
         return log.toString();
+    }
+    
+    public void doubleSession(String username, SocketAddress socketAddress)
+    {
+        log.addMessage("User: " + username + " attempted to connect, but was"
+                + "in a session already. Address of user: " + socketAddress.toString());
+        Model.this.setChanged();
+        Model.this.notifyObservers();
     }
     
     public void input(InputStream in, ObjectInputStream objectin, Scanner scanner)
@@ -256,6 +274,23 @@ public class Model extends Observable
                     Model.this.notifyObservers();
                     return;
                 }
+                else if(obtype == Model.SOCKETS)
+                {
+                    int amount = objectin.readInt();
+                    SocketAddress [] socAdd = new SocketAddress[amount];
+                    for(int i = 0; i < amount; ++i)
+                    {
+                        try {
+                            socAdd[i] = (SocketAddress)(objectin.readObject());
+                        } catch (ClassNotFoundException e) {
+                            log.addMessage("Unable to connect to one of the "
+                                    + "users. Disconnecting.", false);
+                            csc.killConnections("User: " + username + "Could not "
+                                    + "connect to all users. Disconnecting.");
+                        }
+                    }
+                    csc.connect(socAdd);
+                }
                 Model.this.setChanged();
                 Model.this.notifyObservers();
             } catch (SocketException e0) {
@@ -270,13 +305,10 @@ public class Model extends Observable
                 break;
             } catch (StreamCorruptedException e2) {
                 System.err.println("Model.java Closing problems");
-                e2.printStackTrace();
             } catch (IOException e3)
             {
                 System.err.println("Model.java Problem reading "
                         + "input.");
-                e3.printStackTrace();
-                System.exit(0);
             }
         }
     }

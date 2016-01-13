@@ -339,7 +339,7 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
     @Override
     public void update(Observable e, Object o)
     {        
-        switch(model.isConnected())
+        switch(model.getState())
         {
         case Model.WAITING_FOR_CONNECTION:
             lblConnected.setBackground(Color.YELLOW);
@@ -358,12 +358,11 @@ public class ConnectionFrame extends JFrame implements Observer, WindowListener
             disconnect.setVisible(false);
             break;
         }
-
         txtpnHello.setText(model.getLog());
         mySoc.setText(model.getMyPort()+"");
         username.setText(model.getUsername());
-        
-        revalidate();
+
+        this.repaint();
     }
 
     @Override

@@ -195,18 +195,19 @@ public class StartFrame extends JFrame implements WindowListener
         m2.setAcceptingConnection(true);
         ConnectionFrame frame2 = new ConnectionFrame(m2, true);
         m2.addObserver(frame2);
-        frame2.setLocation(500, 500);
+        frame2.setLocation(500, 0);
         
         Model m3 = new Model("Yes", "pass");
         m3.setAcceptingConnection(true);
         ConnectionFrame frame3 = new ConnectionFrame(m3, true);
         m3.addObserver(frame3);
-        frame3.setLocation(1000, 500);
+        frame3.setLocation(1000, 0);
         
-//        Model c = new Model(4002, 4000);
-//        ConnectionFrame f3 = new ConnectionFrame(c);
-//        b.addObserver(f3);
-//        f3.setLocation(400, 400);
+        Model m4 = new Model("Who", "pass");
+        m4.setAcceptingConnection(true);
+        ConnectionFrame frame4 = new ConnectionFrame(m4, true);
+        m4.addObserver(frame4);
+        frame4.setLocation(1500, 0);
     }
 
 
